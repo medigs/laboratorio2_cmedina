@@ -3,10 +3,21 @@ import javax.swing.table.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.HashSet;
+import java.util.HashMap;
 
 public class MantenimientoUsuarios extends JDialog {
 
     static HashSet<String> usuariosInactivos = new HashSet<>();
+    static HashMap<String, String> roles = new HashMap<>();
+
+    static {
+        roles.put("admin", "Administrador");
+        roles.put("usuario1", "Usuario");
+        roles.put("usuario2", "Usuario");
+        roles.put("usuario3", "Usuario");
+        roles.put("usuario4", "Usuario");
+        roles.put("usuario5", "Usuario");
+    }
 
     private DefaultTableModel modeloActivos;
     private DefaultTableModel modeloInactivos;
@@ -15,13 +26,14 @@ public class MantenimientoUsuarios extends JDialog {
     private JTextField txtNuevoUsuario;
     private JPasswordField txtNuevaClave;
     private JPasswordField txtConfirmaClave;
+    private JComboBox<String> cmbRol;
 
     private final boolean esAdmin;
 
     public MantenimientoUsuarios(JFrame parent, String usuarioSesion) {
         super(parent, "Mantenimiento de Usuarios", true);
         this.esAdmin = "admin".equals(usuarioSesion);
-        setSize(620, 520);
+        setSize(660, 540);
         setLocationRelativeTo(parent);
         setResizable(false);
 
@@ -40,12 +52,12 @@ public class MantenimientoUsuarios extends JDialog {
         tabs.setFont(new Font("SansSerif", Font.BOLD, 12));
 
         // Tab Activos
-        modeloActivos = new DefaultTableModel(new String[]{"Usuario", "Estado"}, 0) {
+        modeloActivos = new DefaultTableModel(new String[]{"Usuario", "Rol", "Estado"}, 0) {
             public boolean isCellEditable(int r, int c) { return false; }
         };
         for (String u : Login.usuarios.keySet()) {
             if (!usuariosInactivos.contains(u))
-                modeloActivos.addRow(new Object[]{u, "Activo"});
+                modeloActivos.addRow(new Object[]{u, roles.getOrDefault(u, "Usuario"), "Activo"});
         }
         tablaActivos = crearTabla(modeloActivos);
         JScrollPane scrollActivos = new JScrollPane(tablaActivos);
@@ -55,22 +67,27 @@ public class MantenimientoUsuarios extends JDialog {
         panelActivos.setBorder(BorderFactory.createEmptyBorder(8, 0, 0, 0));
         panelActivos.add(scrollActivos, BorderLayout.CENTER);
 
+        JButton btnCambiarRol = boton("Cambiar Rol", new Color(155, 89, 182));
+        btnCambiarRol.setEnabled(esAdmin);
+        if (!esAdmin) btnCambiarRol.setToolTipText("Solo el administrador puede cambiar roles");
+
         JButton btnDesactivar = boton("Desactivar Usuario", new Color(231, 76, 60));
         btnDesactivar.setEnabled(esAdmin);
         if (!esAdmin) btnDesactivar.setToolTipText("Solo el administrador puede desactivar usuarios");
 
-        JPanel pbActivos = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 4));
+        JPanel pbActivos = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 4));
         pbActivos.setBackground(new Color(240, 244, 248));
+        pbActivos.add(btnCambiarRol);
         pbActivos.add(btnDesactivar);
         panelActivos.add(pbActivos, BorderLayout.SOUTH);
         tabs.addTab("Usuarios Activos", panelActivos);
 
         // Tab Inactivos
-        modeloInactivos = new DefaultTableModel(new String[]{"Usuario", "Estado"}, 0) {
+        modeloInactivos = new DefaultTableModel(new String[]{"Usuario", "Rol", "Estado"}, 0) {
             public boolean isCellEditable(int r, int c) { return false; }
         };
         for (String u : usuariosInactivos) {
-            modeloInactivos.addRow(new Object[]{u, "Inactivo"});
+            modeloInactivos.addRow(new Object[]{u, roles.getOrDefault(u, "Usuario"), "Inactivo"});
         }
         tablaInactivos = crearTabla(modeloInactivos);
         JScrollPane scrollInactivos = new JScrollPane(tablaInactivos);
@@ -92,10 +109,11 @@ public class MantenimientoUsuarios extends JDialog {
 
         panelPrincipal.add(tabs, BorderLayout.CENTER);
 
-        // ── Formulario agregar ─────────────────────────────────────
+        // ── Formulario agregar (solo admin) ────────────────────────
         JPanel panelForm = new JPanel(new GridBagLayout());
         panelForm.setBackground(new Color(225, 232, 240));
-        panelForm.setBorder(BorderFactory.createTitledBorder("Agregar Nuevo Usuario"));
+        panelForm.setBorder(BorderFactory.createTitledBorder(
+                esAdmin ? "Agregar Nuevo Usuario" : "Agregar Nuevo Usuario  [Solo administrador]"));
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.fill = GridBagConstraints.HORIZONTAL;
@@ -104,24 +122,36 @@ public class MantenimientoUsuarios extends JDialog {
         gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0.25;
         panelForm.add(etiqueta("Usuario:"), gbc);
         txtNuevoUsuario = new JTextField();
+        txtNuevoUsuario.setEnabled(esAdmin);
         gbc.gridx = 1; gbc.weightx = 0.75;
         panelForm.add(txtNuevoUsuario, gbc);
 
         gbc.gridx = 0; gbc.gridy = 1; gbc.weightx = 0.25;
         panelForm.add(etiqueta("Contraseña:"), gbc);
         txtNuevaClave = new JPasswordField();
+        txtNuevaClave.setEnabled(esAdmin);
         gbc.gridx = 1; gbc.weightx = 0.75;
         panelForm.add(txtNuevaClave, gbc);
 
         gbc.gridx = 0; gbc.gridy = 2; gbc.weightx = 0.25;
         panelForm.add(etiqueta("Confirmar:"), gbc);
         txtConfirmaClave = new JPasswordField();
+        txtConfirmaClave.setEnabled(esAdmin);
         gbc.gridx = 1; gbc.weightx = 0.75;
         panelForm.add(txtConfirmaClave, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 3; gbc.weightx = 0.25;
+        panelForm.add(etiqueta("Rol:"), gbc);
+        cmbRol = new JComboBox<>(new String[]{"Usuario", "Administrador"});
+        cmbRol.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        cmbRol.setEnabled(esAdmin);
+        gbc.gridx = 1; gbc.weightx = 0.75;
+        panelForm.add(cmbRol, gbc);
 
         JPanel panelBotones = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 6));
         panelBotones.setBackground(new Color(240, 244, 248));
         JButton btnAgregar = boton("Agregar", new Color(52, 152, 219));
+        btnAgregar.setEnabled(esAdmin);
         JButton btnCerrar = boton("Cerrar", new Color(149, 165, 166));
         panelBotones.add(btnAgregar);
         panelBotones.add(btnCerrar);
@@ -138,6 +168,26 @@ public class MantenimientoUsuarios extends JDialog {
         btnAgregar.addActionListener(e -> agregarUsuario());
         btnCerrar.addActionListener(e -> dispose());
 
+        btnCambiarRol.addActionListener(e -> {
+            int fila = tablaActivos.getSelectedRow();
+            if (fila < 0) { error("Seleccione un usuario para cambiar su rol."); return; }
+            String usuario = (String) modeloActivos.getValueAt(fila, 0);
+            if ("admin".equals(usuario)) { error("No se puede cambiar el rol del administrador principal."); return; }
+            String rolActual = roles.getOrDefault(usuario, "Usuario");
+            String[] opciones = {"Usuario", "Administrador"};
+            String nuevoRol = (String) JOptionPane.showInputDialog(this,
+                    "Seleccione el nuevo rol para '" + usuario + "':",
+                    "Cambiar Rol", JOptionPane.PLAIN_MESSAGE, null,
+                    opciones, rolActual);
+            if (nuevoRol != null && !nuevoRol.equals(rolActual)) {
+                roles.put(usuario, nuevoRol);
+                modeloActivos.setValueAt(nuevoRol, fila, 1);
+                JOptionPane.showMessageDialog(this,
+                        "Rol de '" + usuario + "' actualizado a '" + nuevoRol + "'.",
+                        "Éxito", JOptionPane.INFORMATION_MESSAGE);
+            }
+        });
+
         btnDesactivar.addActionListener(e -> {
             int fila = tablaActivos.getSelectedRow();
             if (fila < 0) { error("Seleccione un usuario activo para desactivar."); return; }
@@ -149,7 +199,7 @@ public class MantenimientoUsuarios extends JDialog {
             if (ok == JOptionPane.YES_OPTION) {
                 usuariosInactivos.add(usuario);
                 modeloActivos.removeRow(fila);
-                modeloInactivos.addRow(new Object[]{usuario, "Inactivo"});
+                modeloInactivos.addRow(new Object[]{usuario, roles.getOrDefault(usuario, "Usuario"), "Inactivo"});
             }
         });
 
@@ -164,7 +214,7 @@ public class MantenimientoUsuarios extends JDialog {
                 usuariosInactivos.remove(usuario);
                 Login.intentosFallidos.put(usuario, 0);
                 modeloInactivos.removeRow(fila);
-                modeloActivos.addRow(new Object[]{usuario, "Activo"});
+                modeloActivos.addRow(new Object[]{usuario, roles.getOrDefault(usuario, "Usuario"), "Activo"});
             }
         });
     }
@@ -173,6 +223,7 @@ public class MantenimientoUsuarios extends JDialog {
         String usuario = txtNuevoUsuario.getText().trim();
         String clave = new String(txtNuevaClave.getPassword());
         String confirma = new String(txtConfirmaClave.getPassword());
+        String rol = (String) cmbRol.getSelectedItem();
 
         if (usuario.isEmpty() || clave.isEmpty()) { error("Todos los campos son obligatorios."); return; }
         if (usuario.length() < 3) { error("El usuario debe tener al menos 3 caracteres."); return; }
@@ -184,11 +235,13 @@ public class MantenimientoUsuarios extends JDialog {
         }
 
         Login.usuarios.put(usuario, clave);
-        modeloActivos.addRow(new Object[]{usuario, "Activo"});
+        roles.put(usuario, rol);
+        modeloActivos.addRow(new Object[]{usuario, rol, "Activo"});
         txtNuevoUsuario.setText("");
         txtNuevaClave.setText("");
         txtConfirmaClave.setText("");
-        JOptionPane.showMessageDialog(this, "Usuario '" + usuario + "' agregado exitosamente.",
+        cmbRol.setSelectedIndex(0);
+        JOptionPane.showMessageDialog(this, "Usuario '" + usuario + "' agregado con rol '" + rol + "'.",
                 "Éxito", JOptionPane.INFORMATION_MESSAGE);
     }
 
