@@ -16,6 +16,10 @@ public class Login extends JFrame {
     static {
         usuarios.put("admin", "Admin123!");
         usuarios.put("usuario1", "Clave2024@");
+        usuarios.put("usuario2", "Passw0rd#");
+        usuarios.put("usuario3", "Segura456$");
+        usuarios.put("usuario4", "MiClave789%");
+        usuarios.put("usuario5", "Contraseña321&");
     }
 
     public Login() {
